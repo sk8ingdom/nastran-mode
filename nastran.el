@@ -9,32 +9,49 @@
 ;; (add-to-list 'auto-mode-alist '("\\.dat\\'" . nastran-mode))
 ;; (add-to-list 'auto-mode-alist '("\\.bas\\'" . nastran-mode))
 
-(load "~/.emacs.d/plugins/fill-column-indicator.el")
-;; (setq fci-rule-column 80)
-(setq fill-column 80)
+;; End of File
+(defun nastran-fill-last-column ()
+  (load "~/.emacs.d/plugins/fill-column-indicator.el")
+  ;; (setq fci-rule-column 80)
+  (setq fill-column 80))
+
+;; Tabs
 (setq indent-tabs-mode nil)
 (setq tab-stop-list '(0 8 16 24 32 40 48 56 64 72 80))
 
-(defvar nastran-mode-map
+(defvar nastran-map
   (let ((map (make-keymap)))
     (define-key map [tab] 'move-to-tab-stop)
     (define-key map [backtab] 'nastran-backward-move-to-tab-stop)
     map)
   "Keymap for Nastran major mode")
 
-(load "~/.emacs.d/plugins/column-marker")
+;; https://groups.google.com/forum/#!topic/gnu.emacs.help/AQTq4AwCjOo
+(defun nastran-backward-move-to-tab-stop ()
+  "Move point to previous (greatest less than point) tab-stop.  The
+variable `tab-stop-list' is a list of columns at which there are tab
+stops. Use \\[edit-tab-stops] to edit tab stops interactively.  This
+is a move-backward version of \\[move-to-tab-stop]."
+  (interactive)
+  ;; loop to find greatest tab stop less than point
+  (let ((tabs (reverse tab-stop-list)))
+    (while (and tabs (<= (current-column) (car tabs)))
+      (setq tabs (cdr tabs)))
+    ;; if tabs not nil, car tabs is that column
+    ;; Otherwise, column should be 0.
+    ;; So go there.
 
-(defvar nastran-font-lock-keywords
-  (list
-   '("^\\$.*$" . font-lock-comment-face)
-   '("^\*[a-zA-Z].*[^a-zA-Z]" . font-lock-keyword-face)
-   '("^[ \t]+$" . highlight)))
+    (cond (tabs (move-to-column (car tabs) t))
+          (t  (move-to-column 0 t)))))
 
+;; Columns
 (defvar nastran-columns '(8 16 24 32 40 48 56 64 72))
+
 (defvar nastran-column-width 8)
 
 (defun nastran-columns ()
   (interactive)
+  (load "~/.emacs.d/plugins/column-marker")
   ;; (while nastran-columns
   ;;   (column-marker-create (intern (concat "column-marker-" (number-to-string (car nastran-columns)))))
   ;;   ((intern (concat "column-marker-" (number-to-string (car nastran-columns)))) (car nastran-columns))
@@ -132,44 +149,77 @@
   (button-lock-set-button "'.*'"
                           'find-file-at-point
                           :face 'link :face-policy 'prepend)
-  ;; (require 'button)
-  ;; (make-text-button "'" "'"
-  ;;                   'action
-  ;;                   (lambda (button) (call-interactively 'find-file))
-  ;;                   'follow-link t)
   )
 
+;; Syntax highlighting
+(setq nastran-keyword-elements '("CGAP" "CHEXA" "CMASS2" "CONM" "CONM2" "CONROD" "CPENTA" "CQUAD4" "CQUAD8" "CROD" "CTETRA" "CTRIA3" "CTRIA6" "CWELD" "GENEL" "PLOTEL" "RBAR" "RBE2" "RBE3" "CELAS2" "CELAS1" "CBAR" "CBEAM" "CBUSH>"))
+(setq nastran-keyword-proprietes '("CORD1C" "CORD1R" "CORD1S" "CORD2C" "CORD2R" "CORD2S" "MAT1" "MAT2" "MAT8" "MATS1" "PBAR" "PBARL" "PBEAM" "PBUSH" "PCOMP" "PELAS" "PGAP" "PSHELL" "PSOLID" "PWELD"))
+(setq nastran-keyword-spc '("AUTOSPC" "BILIN" "GRDPNT" "K" "POST" "PRTMAXIM" "UD" "VONMISES" "Z" "ALIGN" "ALL" "AUTO" "BCONP" "BFRIC" "BLSEG" "BOUTPUT" "BWIDTH" "BY" "CORNER" "ELEMID" "ENDT" "FORM" "G" "GRIDID" "K6ROT" "LGDISP" "LOG" "LOGICAL" "MAXRATIO" "NEWSEQ" "NO" "NOCOMPS" "NONE" "OFF" "OGEOM" "ON" "OUTPUT2" "OUTPUT4" "BUFFSIZE" "PATVER" "PHASE" "PLASTIC" "PLOT" "PRINT" "PROJECT" "PUNCH" "Q" "QQ" "QT" "REAL" "SNORM" "SORT1" "SORT2" "SPOT" "SYSTEM" "T" "THRU" "TQ" "TT" "UNIT" "XYPLOT" "YES" "SYM" "STATUS" "OPTEXIT" "CRIT" "THRESH" "SPARSEDR" "DFREQ"))
+(setq nastran-keyword-load '("ANALYSIS" "DESSUB" "ACCEL" "ACCELERATION" "ASET1" "DAREA" "DLOAD" "FREQ" "FREQ1" "FREQ5" "RANDOM" "RLOAD2" "TABLED" "DISP" "DISPLACEMENT" "ECHO" "EIGR" "EIGRL" "ELFORCE" "FORCE" "GRAV" "LABEL" "LOAD" "MAXLINES" "METHOD" "MOMENT" "MPC" "MPCADD" "MPCFORCES" "OLOAD" "OUTPUT" "PLOAD4" "RANDPS" "REPCASE" "SET" "SPC" "SPC" "SPC1" "SPCADD" "SPCD" "SPCFORCE" "SPCFORCES" "STRESS" "SUBCASE" "SUBTITLE" "SUPORT" "TABLED1" "TABRND1" "TEMP" "TEMPD" "TITLE" "XYPRINT" "GROUNDCHECK" "SDAMPING" "RESVEC"))
+(setq nastran-keyword-param  '("ALTER" "ASSIGN" "COMPILE" "COPY" "INPUTT4" "SEALL" "SUPER" "TYPE" "ADD" "BEGIN" "BULK" "CEND" "DIAG" "DMIIN" "ENDDATA" "EQUIV" "ID" "INCLUDE" "INIT" "MATGEN" "MERGE" "NASTRAN" "NLPARM" "PARAM" "PARAML" "PROJ" "PURGE" "RESTART" "SETVAL" "SOL" "TIME"))
+(setq nastran-keyword-noeud '("GRID" "SPOINT"))
+(setq nastran-keyword-optimisation '("DESVAR" "DVPREL1" "DVPREL2" "DVMREL1" "DVMREL2" "DRESP1" "DCONSTR"))
 
-;; https://groups.google.com/forum/#!topic/gnu.emacs.help/AQTq4AwCjOo
-(defun nastran-backward-move-to-tab-stop ()
-  "Move point to previous (greatest less than point) tab-stop.  The
-variable `tab-stop-list' is a list of columns at which there are tab
-stops. Use \\[edit-tab-stops] to edit tab stops interactively.  This
-is a move-backward version of \\[move-to-tab-stop]."
-  (interactive)
-  ;; loop to find greatest tab stop less than point
-  (let ((tabs (reverse tab-stop-list)))
-    (while (and tabs (<= (current-column) (car tabs)))
-      (setq tabs (cdr tabs)))
-    ;; if tabs not nil, car tabs is that column
-    ;; Otherwise, column should be 0.
-    ;; So go there.
+(setq nastran-keyword-elements-regexp (regexp-opt nastran-keyword-elements 'words))
+(setq nastran-keyword-proprietes-regexp (regexp-opt nastran-keyword-proprietes 'words))
+(setq nastran-keyword-spc-regexp (regexp-opt nastran-keyword-spc 'words))
+(setq nastran-keyword-load-regexp (regexp-opt nastran-keyword-load 'words))
+(setq nastran-keyword-param-regexp (regexp-opt nastran-keyword-param 'words))
+(setq nastran-keyword-noeud-regexp (regexp-opt nastran-keyword-noeud 'words))
+(setq nastran-keyword-optimisation-regexp (regexp-opt nastran-keyword-optimisation 'words))
 
-    (cond (tabs (move-to-column (car tabs) t))
-          (t  (move-to-column 0 t)))))
+(setq nastran-keyword-elements nil)
+(setq nastran-keyword-proprietes nil)
+(setq nastran-keyword-spc nil)
+(setq nastran-keyword-load nil)
+(setq nastran-keyword-param nil)
+(setq nastran-keyword-noeud nil)
+(setq nastran-keyword-optimisation nil)
 
-(defun nastran-mode ()
-  (interactive)
-  (setq mode-name "nastran")
-  (setq major-mode
-        'nastran-mode
-        mode-name "Nastran"
-        font-lock-defaults '(nastran-font-lock-keywords)
-        require-fine-newline t)
-  (make-local-variable 'font-lock-defaults)
-  (setq font-lock-defaults '(nastran-font-lock-keywords))
-  (use-local-map nastran-mode-map)
-  (run-hooks 'nastran-mode-hook)
+(setq nastran-font-lock-keywords
+      `(
+        (,nastran-keyword-elements-regexp . font-lock-type-face)
+        (,nastran-keyword-proprietes-regexp . font-lock-constant-face)
+        (,nastran-keyword-spc-regexp . font-lock-builtin-face)
+        (,nastran-keyword-load-regexp . font-lock-doc-face)
+        (,nastran-keyword-param-regexp . font-lock-function-name-face)
+        (,nastran-keyword-noeud-regexp . font-lock-negation-char-face)
+        (,nastran-keyword-optimisation-regexp . font-lock-reference-face)))
+
+(setq nastran-syntax-table
+      (let ((table (make-syntax-table)))
+        ;; $ is a comment delimiter
+        (modify-syntax-entry ?$ "< b" table)
+        (modify-syntax-entry ?\n "> b" table)
+        table))
+
+;; (defun nastran-mode ()
+;;   (interactive)
+;;   (define-derived-mode nastran-mode prog-mode "Simple Nastran Mode"
+;;     :syntax-table nastran-syntax-table)
+;;   (setq mode-name "nastran")
+;;   (setq major-mode
+;;         'nastran-mode
+;;         mode-name "Nastran"
+;;         font-lock-defaults '(nastran-font-lock-keywords)
+;;         require-fine-newline t)
+;;   (make-local-variable 'font-lock-defaults)
+;;   (setq font-lock-defaults '(nastran-font-lock-keywords))
+;;   (use-local-map nastran-mode-map)
+;;   (run-hooks 'nastran-mode-hook)
+;;   (nastran-fill-last-column)
+;;   (nastran-columns)
+;;   (fci-mode)
+;;   (nastran-link-includes))
+
+;;;###autoload (add-to-list 'auto-mode-alist '("\\.blk\\'" . nastran-mode))
+(define-derived-mode nastran-mode prog-mode "Simple Nastran Mode"
+  :syntax-table nastran-syntax-table
+  (setq font-lock-defaults '((nastran-font-lock-keywords)))
+  (font-lock-fontify-buffer)
+  (use-local-map nastran-map)
+  (run-hooks 'nastran-hook)
+  (nastran-fill-last-column)
   (nastran-columns)
   (fci-mode)
   (nastran-link-includes))
